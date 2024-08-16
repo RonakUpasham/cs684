@@ -1,0 +1,168 @@
+type st_1 = St_1_Stopped|St_1_Run
+type st = St_Up|St_Right|St_Left|St_Idle|St_Down
+node manual_control(diR : int) returns (v_l : int; v_r : int; dir : int)
+var pnr : bool; nr : bool; r : bool; ns : st; s : st; ck_1 : st;
+    v_l_St_Idle : int; v_r_St_Idle : int; dir_St_Idle : int; ns_St_Idle : st;
+    nr_St_Idle : bool; v_l_St_Up : int; v_r_St_Up : int; dir_St_Up : int;
+    ns_St_Up : st; nr_St_Up : bool; v_l_St_Right : int; v_r_St_Right : int;
+    dir_St_Right : int; ns_St_Right : st; nr_St_Right : bool;
+    v_l_St_Left : int; v_r_St_Left : int; dir_St_Left : int; ns_St_Left : st;
+    nr_St_Left : bool; v_l_St_Down : int; v_r_St_Down : int;
+    dir_St_Down : int; ns_St_Down : st; nr_St_Down : bool; ck : st;
+    s_St_Idle : st; r_St_Idle : bool; s_St_Up : st; r_St_Up : bool;
+    s_St_Right : st; r_St_Right : bool; s_St_Left : st; r_St_Left : bool;
+    s_St_Down : st; r_St_Down : bool; v_28 : bool; v_29 : bool; v_30 : bool;
+    v_31 : bool; v_32 : st; v_33 : bool; v_34 : st; v_35 : bool; v_36 : st;
+    v_37 : bool; v_21 : bool; v_22 : bool; v_23 : bool; v_24 : st;
+    v_25 : bool; v_26 : st; v_27 : bool; v_14 : bool; v_15 : bool;
+    v_16 : bool; v_17 : st; v_18 : bool; v_19 : st; v_20 : bool; v_7 : bool;
+    v_8 : bool; v_9 : bool; v_10 : st; v_11 : bool; v_12 : st; v_13 : bool;
+    v : bool; v_1 : bool; v_2 : bool; v_3 : st; v_4 : bool; v_5 : st;
+    v_6 : bool;
+let
+  pnr = false fby nr;
+  ck_1 = s;
+  dir_St_Idle = 0;
+  v_r_St_Idle = 0;
+  v_l_St_Idle = 0;
+  nr_St_Idle = false;
+  ns_St_Idle = St_Idle;
+  dir_St_Up = 0;
+  v_r_St_Up = 30;
+  v_l_St_Up = 30;
+  nr_St_Up = false;
+  ns_St_Up = St_Up;
+  dir_St_Right = 2;
+  v_r_St_Right = 30;
+  v_l_St_Right = 30;
+  nr_St_Right = false;
+  ns_St_Right = St_Right;
+  dir_St_Left = 1;
+  v_r_St_Left = 30;
+  v_l_St_Left = 30;
+  nr_St_Left = false;
+  ns_St_Left = St_Left;
+  dir_St_Down = 3;
+  v_r_St_Down = 30;
+  v_l_St_Down = 30;
+  nr_St_Down = false;
+  ns_St_Down = St_Down;
+  v_l =
+    merge ck_1
+      (St_Down -> v_l_St_Down)(St_Left -> v_l_St_Left)
+      (St_Right -> v_l_St_Right)(St_Up -> v_l_St_Up)(St_Idle -> v_l_St_Idle);
+  v_r =
+    merge ck_1
+      (St_Down -> v_r_St_Down)(St_Left -> v_r_St_Left)
+      (St_Right -> v_r_St_Right)(St_Up -> v_r_St_Up)(St_Idle -> v_r_St_Idle);
+  dir =
+    merge ck_1
+      (St_Down -> dir_St_Down)(St_Left -> dir_St_Left)
+      (St_Right -> dir_St_Right)(St_Up -> dir_St_Up)(St_Idle -> dir_St_Idle);
+  ns =
+    merge ck_1
+      (St_Down -> ns_St_Down)(St_Left -> ns_St_Left)(St_Right -> ns_St_Right)
+      (St_Up -> ns_St_Up)(St_Idle -> ns_St_Idle);
+  nr =
+    merge ck_1
+      (St_Down -> nr_St_Down)(St_Left -> nr_St_Left)(St_Right -> nr_St_Right)
+      (St_Up -> nr_St_Up)(St_Idle -> nr_St_Idle);
+  ck = St_Idle fby ns;
+  r_St_Idle = if v_28 then true else v_37;
+  s_St_Idle = if v_28 then St_Right else v_36;
+  v_37 = if v_29 then true else v_35;
+  v_36 = if v_29 then St_Left else v_34;
+  v_35 = if v_30 then true else v_33;
+  v_34 = if v_30 then St_Down else v_32;
+  v_33 = if v_31 then true else (pnr when St_Idle(ck));
+  v_32 = if v_31 then St_Up else St_Idle;
+  v_31 = ((diR when St_Idle(ck)) = 3);
+  v_30 = ((diR when St_Idle(ck)) = 4);
+  v_29 = ((diR when St_Idle(ck)) = 1);
+  v_28 = ((diR when St_Idle(ck)) = 2);
+  r_St_Up = if v_21 then true else v_27;
+  s_St_Up = if v_21 then St_Right else v_26;
+  v_27 = if v_22 then true else v_25;
+  v_26 = if v_22 then St_Left else v_24;
+  v_25 = if v_23 then true else (pnr when St_Up(ck));
+  v_24 = if v_23 then St_Down else St_Up;
+  v_23 = ((diR when St_Up(ck)) = 4);
+  v_22 = ((diR when St_Up(ck)) = 1);
+  v_21 = ((diR when St_Up(ck)) = 2);
+  r_St_Right = if v_14 then true else v_20;
+  s_St_Right = if v_14 then St_Up else v_19;
+  v_20 = if v_15 then true else v_18;
+  v_19 = if v_15 then St_Left else v_17;
+  v_18 = if v_16 then true else (pnr when St_Right(ck));
+  v_17 = if v_16 then St_Down else St_Right;
+  v_16 = ((diR when St_Right(ck)) = 4);
+  v_15 = ((diR when St_Right(ck)) = 1);
+  v_14 = ((diR when St_Right(ck)) = 3);
+  r_St_Left = if v_7 then true else v_13;
+  s_St_Left = if v_7 then St_Up else v_12;
+  v_13 = if v_8 then true else v_11;
+  v_12 = if v_8 then St_Right else v_10;
+  v_11 = if v_9 then true else (pnr when St_Left(ck));
+  v_10 = if v_9 then St_Down else St_Left;
+  v_9 = ((diR when St_Left(ck)) = 4);
+  v_8 = ((diR when St_Left(ck)) = 2);
+  v_7 = ((diR when St_Left(ck)) = 3);
+  r_St_Down = if v then true else v_6;
+  s_St_Down = if v then St_Up else v_5;
+  v_6 = if v_1 then true else v_4;
+  v_5 = if v_1 then St_Right else v_3;
+  v_4 = if v_2 then true else (pnr when St_Down(ck));
+  v_3 = if v_2 then St_Left else St_Down;
+  v_2 = ((diR when St_Down(ck)) = 1);
+  v_1 = ((diR when St_Down(ck)) = 2);
+  v = ((diR when St_Down(ck)) = 3);
+  s =
+    merge ck
+      (St_Down -> s_St_Down)(St_Left -> s_St_Left)(St_Right -> s_St_Right)
+      (St_Up -> s_St_Up)(St_Idle -> s_St_Idle);
+  r =
+    merge ck
+      (St_Down -> r_St_Down)(St_Left -> r_St_Left)(St_Right -> r_St_Right)
+      (St_Up -> r_St_Up)(St_Idle -> r_St_Idle)
+tel
+
+node main(diR : int) returns (v_l : int; v_r : int; dir : int)
+var pnr : bool; nr : bool; r : bool; ns : st_1; s : st_1; ck_2 : st_1;
+    v_l_St_1_Run : int; v_r_St_1_Run : int; dir_St_1_Run : int;
+    ns_St_1_Run : st_1; nr_St_1_Run : bool; v_l_St_1_Stopped : int;
+    v_r_St_1_Stopped : int; dir_St_1_Stopped : int; ns_St_1_Stopped : st_1;
+    nr_St_1_Stopped : bool; r_1 : bool; ck : st_1; s_St_1_Run : st_1;
+    r_St_1_Run : bool; s_St_1_Stopped : st_1; r_St_1_Stopped : bool;
+    v_38 : bool; v : bool;
+let
+  pnr = false fby nr;
+  ck_2 = s;
+  (v_l_St_1_Run, v_r_St_1_Run, dir_St_1_Run) =
+    manual_control((diR when St_1_Run(ck_2))) every r_1;
+  nr_St_1_Run = false;
+  ns_St_1_Run = St_1_Run;
+  r_1 = (r when St_1_Run(ck_2));
+  dir_St_1_Stopped = 0;
+  v_r_St_1_Stopped = 0;
+  v_l_St_1_Stopped = 0;
+  nr_St_1_Stopped = false;
+  ns_St_1_Stopped = St_1_Stopped;
+  v_l =
+    merge ck_2 (St_1_Stopped -> v_l_St_1_Stopped)(St_1_Run -> v_l_St_1_Run);
+  v_r =
+    merge ck_2 (St_1_Stopped -> v_r_St_1_Stopped)(St_1_Run -> v_r_St_1_Run);
+  dir =
+    merge ck_2 (St_1_Stopped -> dir_St_1_Stopped)(St_1_Run -> dir_St_1_Run);
+  ns = merge ck_2 (St_1_Stopped -> ns_St_1_Stopped)(St_1_Run -> ns_St_1_Run);
+  nr = merge ck_2 (St_1_Stopped -> nr_St_1_Stopped)(St_1_Run -> nr_St_1_Run);
+  ck = St_1_Run fby ns;
+  r_St_1_Run = if v_38 then true else (pnr when St_1_Run(ck));
+  s_St_1_Run = if v_38 then St_1_Stopped else St_1_Run;
+  v_38 = ((diR when St_1_Run(ck)) = 5);
+  r_St_1_Stopped = if v then true else (pnr when St_1_Stopped(ck));
+  s_St_1_Stopped = if v then St_1_Run else St_1_Stopped;
+  v = ((diR when St_1_Stopped(ck)) = 5);
+  s = merge ck (St_1_Stopped -> s_St_1_Stopped)(St_1_Run -> s_St_1_Run);
+  r = merge ck (St_1_Stopped -> r_St_1_Stopped)(St_1_Run -> r_St_1_Run)
+tel
+

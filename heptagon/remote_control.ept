@@ -1,0 +1,57 @@
+node manual_control(diR: int) returns (v_l, v_r, dir: int)
+let
+	automaton
+		state Idle
+			do v_l=0; v_r=0; dir=0;
+		unless (diR = 2) then Right
+		| (diR = 1) then Left
+		| (diR = 4) then Down
+		| (diR = 3) then Up
+
+
+		state Up
+			do v_l=30; v_r=30; dir=0;
+		unless (diR = 2) then Right
+		| (diR = 1) then Left
+		| (diR = 4) then Down
+		
+		state Right
+			do v_l=30; v_r=30; dir=2;
+
+		unless (diR = 3) then Up
+		| (diR = 1) then Left
+		| (diR = 4) then Down
+				
+		state Left
+			do v_l=30; v_r=30; dir=1;
+
+		unless (diR = 3) then Up
+		| (diR = 2) then Right
+		| (diR = 4) then Down
+				
+		state Down
+			do v_l=30; v_r=30; dir=3;
+
+		unless (diR = 3) then Up
+		| (diR = 2) then Right
+		| (diR = 1) then Left
+				
+	end
+tel
+
+
+
+
+node main(diR: int;) returns (v_l, v_r, dir: int;)
+
+let
+	automaton
+		state Run
+			do (v_l, v_r, dir) = manual_control(diR);
+		unless diR = 5 then Stopped
+		
+		state Stopped
+			do (v_l, v_r, dir) = (0, 0, 0);
+		unless diR = 5 then Run
+	end	
+tel

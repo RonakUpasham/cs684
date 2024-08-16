@@ -1,0 +1,153 @@
+open Mc_ext
+
+const kp: float = 0.3
+const kd: float = 0.3
+const ki: float = 0.0
+
+const white_weights: float^4 = [0.4, 0.3, 0.426, 0.4]
+const t_small_pos: float = 20.0
+const t_small_neg: float = -.20.0
+const t_large_pos: float = 70.0
+const t_large_neg: float = -.70.0
+
+const black_weights: float^4 = [0.35, 0.28, 0.405, 0.35]
+const t_small_pos2: float = 8.0
+const t_small_neg2: float = -.8.0
+-- const t_large_pos2: float = 15.0
+-- const t_large_neg2: float = -.15.0
+
+node calculatePID(error: float) returns (pidValue: float)
+var p,i,d: float;
+let
+	p = error;
+	i = 0.0->(pre(i) +. error);
+	d = error -. (0.0->pre(error));
+	pidValue = (kp*.p) +. (ki*.i) +. (kd*.d);
+tel
+
+node calculateError(sen: float^5; weights: float^4) returns (error: float)
+var left_weighted_sum, right_weighted_sum: float;
+let
+	left_weighted_sum = (sen[0] *. weights[0]) +. (sen[1] *. weights[1]);
+	right_weighted_sum = (sen[3] *. weights[2]) +. (sen[4] *. weights[3]);
+	error = left_weighted_sum -. right_weighted_sum;
+tel
+
+
+node calculateMotor1(pidValue: float) returns (v_l, v_r, dir: int)
+var last vl: int; last vr:int; last diR:int;
+let
+	v_l = vl;
+	v_r = vr;
+	dir = diR;
+	automaton
+		state Forward
+			do vl=30 - int_of_float(0.5 *. pidValue);
+			   vr=30 + int_of_float(0.5 *. pidValue);
+			   diR=0;
+		unless pidValue >. t_large_pos then Hardleft
+		| pidValue <. t_large_neg then Hardright
+		
+		state Hardleft
+			do vl=130; vr=150; diR=1;
+		unless (pidValue >. t_small_neg and pidValue <. t_small_pos) then Forward
+		| pidValue <. t_large_neg then Hardright
+		
+		state Hardright
+			do vl=150; vr=130; diR=2;
+		unless (pidValue >. t_small_neg and pidValue <. t_small_pos) then Forward
+		| pidValue >. t_large_pos then Hardleft
+	end
+tel
+
+
+node calculateMotor2(sen: float^5; pidValue: float; count: int; flag: bool) returns (v_l, v_r, dir: int)
+var last vl: int; last vr:int; last diR:int;
+let
+	v_l = vl;
+	v_r = vr;
+	dir = diR;
+	automaton
+		state Forward
+			do vl=30 + int_of_float(0.5 *. pidValue);
+			   vr=30 - int_of_float(0.5 *. pidValue);
+			   diR=0;
+		unless (flag and (count = 1)) then Nodeone
+		| (flag and (count = 2)) then Noderight
+		| (flag and (count = 3 or count = 4)) then Nodeleft
+		
+		state Nodeone
+			do vl=30; vr=10; diR=0;
+		unless not ((sen[0] >. 800.0 and sen[2] <. 700.0 and sen[4] >. 800.0) or (sen[0] >. 800.0 and sen[1] <. 700.0 and sen[2] >. 800.0) or (sen[2] >. 800.0 and sen[3] <. 500.0 and sen[4] >. 800.0)) then Nodeone
+		| ((sen[0] >. 800.0 and sen[2] <. 700.0 and sen[4] >. 800.0) or (sen[0] >. 800.0 and sen[1] <. 700.0 and sen[2] >. 800.0) or (sen[2] >. 800.0 and sen[3] <. 500.0 and sen[4] >. 800.0)) then Forward
+		
+		state Nodeleft
+			do vl=10; vr=40; diR=0;
+		unless not ((sen[0] >. 800.0 and sen[2] <. 700.0 and sen[4] >. 800.0) or (sen[0] >. 800.0 and sen[1] <. 700.0 and sen[2] >. 800.0) or (sen[2] >. 800.0 and sen[3] <. 500.0 and sen[4] >. 800.0)) then Nodeleft
+		| ((sen[0] >. 800.0 and sen[2] <. 700.0 and sen[4] >. 800.0) or (sen[0] >. 800.0 and sen[1] <. 700.0 and sen[2] >. 800.0) or (sen[2] >. 800.0 and sen[3] <. 500.0 and sen[4] >. 800.0)) then Forward
+		
+		state Noderight
+			do vl=30; vr=10; diR=0;
+		unless not ((sen[0] >. 800.0 and sen[2] <. 700.0 and sen[4] >. 800.0) or (sen[0] >. 800.0 and sen[1] <. 700.0 and sen[2] >. 800.0) or (sen[2] >. 800.0 and sen[3] <. 500.0 and sen[4] >. 800.0)) then Noderight
+		| ((sen[0] >. 800.0 and sen[2] <. 700.0 and sen[4] >. 800.0) or (sen[0] >. 800.0 and sen[1] <. 700.0 and sen[2] >. 800.0) or (sen[2] >. 800.0 and sen[3] <. 500.0 and sen[4] >. 800.0)) then Forward
+	end
+	
+tel
+
+
+node counter(sen: float^5; beacon, second: int) returns (count: int; flag: bool)
+var last cnt: int = 0; last flg: bool = false; last beaconcount: int = 0;
+let
+	count = cnt;
+	flag = flg;
+	automaton
+		state Ready
+			do cnt = last cnt;
+			   flg = false;
+			   beaconcount = 0;
+		unless (second > 23 and sen[1] <. 750.0 and sen[2] <. 750.0 and sen[3] <. 500.0) continue Increment
+		
+		state Increment
+			do cnt = last cnt + 1;
+			   flg = true;
+			   beaconcount = 0;
+		until true then Wait
+		
+		state Wait
+			do beaconcount = last beaconcount + beacon;
+			   cnt = last cnt;
+			   flg = true;
+		unless (last beaconcount > 1) continue Ready
+	end
+tel
+
+
+node check(sen: float^5; second: int) returns (white_switch, black_switch: bool)
+let
+	white_switch = if (sen[0] <. 700.0 and sen[2] >. 900.0 and sen[4] <. 700.0) then true else false;
+	black_switch = if (second > 23 and sen[0] >. 900.0) then true else false;
+tel
+
+node main(sen0, sen1, sen2, sen3, sen4, second, beacon: int;) returns (v_l, v_r, dir, cnt: int; pidValue: float;)
+var sen: float^5; weights: float^4; error: float; white_switch, black_switch, flag: bool; count: int;
+let
+	sen = [float_of_int(sen0), float_of_int(sen1), float_of_int(sen2), float_of_int(sen3), float_of_int(sen4)];
+	(white_switch, black_switch) = check(sen, second);
+
+	error = calculateError(sen, weights);
+	pidValue = calculatePID(error);
+	(count, flag) = counter(sen, beacon, second);
+	cnt = count;
+
+	automaton
+		state Whiteline
+			do weights = white_weights;
+		        (v_l, v_r, dir) = calculateMotor1(pidValue);
+		unless black_switch then Blackline
+		
+		state Blackline
+			do weights = black_weights;
+			(v_l, v_r, dir) = calculateMotor2(sen, pidValue, count, flag);
+		
+	end		
+tel

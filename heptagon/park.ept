@@ -1,0 +1,85 @@
+open Mc_ext
+
+const kp: float = 0.3
+const kd: float = 0.3
+const ki: float = 0.0
+
+const weights: float^4 = [0.35, 0.28, 0.405, 0.35]
+
+node calculatePID(error: float) returns (pidValue: float)
+var p,i,d: float;
+let
+	p = error;
+	i = 0.0->(pre(i) +. error);
+	d = error -. (0.0->pre(error));
+	pidValue = (kp*.p) +. (ki*.i) +. (kd*.d);
+tel
+
+node calculateError(sen: float^5) returns (error: float)
+var left_weighted_sum, right_weighted_sum: float;
+let
+	left_weighted_sum = (sen[0] *. weights[0]) +. (sen[1] *. weights[1]);
+	right_weighted_sum = (sen[3] *. weights[2]) +. (sen[4] *. weights[3]);
+	error = left_weighted_sum -. right_weighted_sum;
+tel
+
+node parking(beacon: bool; diR: int) returns (v_l, v_r, dir: int)
+var timer: int;
+let
+	automaton
+		state Turn
+			do timer = 2 -> if (((pre(timer)) > 0) and beacon) then pre(timer)-1  else pre(timer);
+			v_l=30; v_r=30; dir=diR;
+		until (timer <= 0) then Forward
+		
+		state Forward
+			do timer = 3 -> if (((pre(timer)) > 0) and beacon) then pre(timer)-1  else pre(timer);
+			v_l=38; v_r=38; dir=0;
+		until (timer <= 0) then Stationary
+		
+		state Stationary
+			do timer = 0;
+			v_l=0; v_r=0; dir=0;
+	end
+tel
+
+node calculateMotor3(irSen1, irSen2, irSen3, irSen4: int; pidValue: float; beacon: bool) returns (v_l, v_r, dir: int)
+var last vl: int; last vr:int; last diR:int; timer: int;
+let
+	v_l = vl;
+	v_r = vr;
+	dir = diR;
+	automaton
+	        state Turn
+			do timer = 4 -> if (((pre(timer)) > 0) and beacon) then pre(timer)-1  else pre(timer);
+			vl=30 + int_of_float(0.5 *. pidValue);
+			vr=30 - int_of_float(0.5 *. pidValue);
+		until (timer <= 0) then Forward
+		
+		state Forward
+			do vl=30 + int_of_float(0.5 *. pidValue);
+			   vr=30 - int_of_float(0.5 *. pidValue);
+			   diR=0;
+			   timer =0;
+		unless (irSen3 = 1 and irSen4 = 1) then Parking1
+		| (irSen1 = 1 and irSen2 = 1) then Parking2
+		
+		state Parking1
+			do (vl, vr, diR) = parking(beacon, 2);
+			timer =0;
+			
+		state Parking2
+			do (vl, vr, diR) = parking(beacon, 1);
+		        timer =0;
+	end
+	
+tel
+
+node main(sen0, sen1, sen2, sen3, sen4, irSen1, irSen2, irSen3, irSen4: int; beacon: bool) returns (v_l, v_r, dir: int)
+var sen: float^5; error, pidValue: float; 
+let	
+	sen = [float_of_int(sen0), float_of_int(sen1), float_of_int(sen2), float_of_int(sen3), float_of_int(sen4)];
+	error = calculateError(sen);
+	pidValue = calculatePID(error);
+	(v_l, v_r, dir) = calculateMotor3(irSen1, irSen2, irSen3, irSen4, pidValue, beacon);
+tel

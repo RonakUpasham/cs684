@@ -1,0 +1,278 @@
+open Mc_ext
+type st_1 = St_1_Turn|St_1_Parking2|St_1_Parking1|St_1_Forward
+type st = St_Turn|St_Stationary|St_Forward
+const kp = 0.300000
+const kd = 0.300000
+const ki = 0.000000
+const weights = [0.350000, 0.280000, 0.405000, 0.350000]
+node calculatePID(error : float) returns (pidValue : float)
+var d : float; i : float; p : float; v : bool; v_1 : float; v_2 : float;
+    v_3 : bool; v_4 : float; v_5 : float; v_6 : float; v_7 : float;
+    v_8 : float; v_9 : float;
+let
+  pidValue = (v_8 +. v_9);
+  v_9 = (kd *. d);
+  v_8 = (v_6 +. v_7);
+  v_7 = (ki *. i);
+  v_6 = (kp *. p);
+  d = (error -. v_5);
+  v_5 = if v_3 then 0.000000 else v_4;
+  v_4 = pre error;
+  v_3 = true fby false;
+  i = if v then 0.000000 else v_2;
+  v_2 = (v_1 +. error);
+  v_1 = pre i;
+  v = true fby false;
+  p = error
+tel
+
+node calculateError(sen : float^5) returns (error : float)
+var right_weighted_sum : float; left_weighted_sum : float; v : float;
+    v_10 : float; v_11 : float; v_12 : float; v_13 : float; v_14 : float;
+    v_15 : float; v_16 : float; v_17 : float; v_18 : float; v_19 : float;
+    v_20 : float;
+let
+  error = (left_weighted_sum -. right_weighted_sum);
+  right_weighted_sum = (v_17 +. v_20);
+  v_20 = (v_18 *. v_19);
+  v_19 = weights[3];
+  v_18 = sen[4];
+  v_17 = (v_15 *. v_16);
+  v_16 = weights[2];
+  v_15 = sen[3];
+  left_weighted_sum = (v_11 +. v_14);
+  v_14 = (v_12 *. v_13);
+  v_13 = weights[1];
+  v_12 = sen[1];
+  v_11 = (v *. v_10);
+  v_10 = weights[0];
+  v = sen[0]
+tel
+
+node parking(beacon : bool; diR : int)
+returns (v_l : int; v_r : int; dir : int)
+var timer : int; pnr : bool; nr : bool; r : bool; ns : st; ck : st;
+    v_l_St_Turn : int; v_r_St_Turn : int; dir_St_Turn : int;
+    timer_St_Turn : int; ns_St_Turn : st; nr_St_Turn : bool;
+    v_l_St_Forward : int; v_r_St_Forward : int; dir_St_Forward : int;
+    timer_St_Forward : int; ns_St_Forward : st; nr_St_Forward : bool;
+    v_l_St_Stationary : int; v_r_St_Stationary : int;
+    dir_St_Stationary : int; timer_St_Stationary : int;
+    ns_St_Stationary : st; nr_St_Stationary : bool; v_30 : bool; v_31 : bool;
+    v_32 : bool; v_33 : int; v_34 : bool; v_35 : bool; v_36 : int;
+    v_37 : int; v_38 : int; v_39 : int; v : bool; v_21 : bool; v_22 : bool;
+    v_23 : int; v_24 : bool; v_25 : bool; v_26 : int; v_27 : int; v_28 : int;
+    v_29 : int;
+let
+  r = pnr;
+  pnr = false fby nr;
+  ck = St_Turn fby ns;
+  dir_St_Turn = (diR when St_Turn(ck));
+  v_r_St_Turn = 30;
+  v_l_St_Turn = 30;
+  timer_St_Turn = if v_32 then 2 else v_39;
+  v_39 = if v_35 then v_37 else v_38;
+  v_38 = pre (timer when St_Turn(ck));
+  v_37 = (v_36 - 1);
+  v_36 = pre (timer when St_Turn(ck));
+  v_35 = (v_34 & (beacon when St_Turn(ck)));
+  v_34 = (v_33 > 0);
+  v_33 = pre (timer when St_Turn(ck));
+  v_32 = if v_31 then true else (r when St_Turn(ck));
+  v_31 = true fby false;
+  nr_St_Turn = if v_30 then true else false;
+  ns_St_Turn = if v_30 then St_Forward else St_Turn;
+  v_30 = ((timer when St_Turn(ck)) <= 0);
+  dir_St_Forward = 0;
+  v_r_St_Forward = 38;
+  v_l_St_Forward = 38;
+  timer_St_Forward = if v_22 then 3 else v_29;
+  v_29 = if v_25 then v_27 else v_28;
+  v_28 = pre (timer when St_Forward(ck));
+  v_27 = (v_26 - 1);
+  v_26 = pre (timer when St_Forward(ck));
+  v_25 = (v_24 & (beacon when St_Forward(ck)));
+  v_24 = (v_23 > 0);
+  v_23 = pre (timer when St_Forward(ck));
+  v_22 = if v_21 then true else (r when St_Forward(ck));
+  v_21 = true fby false;
+  nr_St_Forward = if v then true else false;
+  ns_St_Forward = if v then St_Stationary else St_Forward;
+  v = ((timer when St_Forward(ck)) <= 0);
+  dir_St_Stationary = 0;
+  v_r_St_Stationary = 0;
+  v_l_St_Stationary = 0;
+  timer_St_Stationary = 0;
+  nr_St_Stationary = false;
+  ns_St_Stationary = St_Stationary;
+  v_l =
+    merge ck
+      (St_Stationary -> v_l_St_Stationary)(St_Forward -> v_l_St_Forward)
+      (St_Turn -> v_l_St_Turn);
+  v_r =
+    merge ck
+      (St_Stationary -> v_r_St_Stationary)(St_Forward -> v_r_St_Forward)
+      (St_Turn -> v_r_St_Turn);
+  dir =
+    merge ck
+      (St_Stationary -> dir_St_Stationary)(St_Forward -> dir_St_Forward)
+      (St_Turn -> dir_St_Turn);
+  timer =
+    merge ck
+      (St_Stationary -> timer_St_Stationary)(St_Forward -> timer_St_Forward)
+      (St_Turn -> timer_St_Turn);
+  ns =
+    merge ck
+      (St_Stationary -> ns_St_Stationary)(St_Forward -> ns_St_Forward)
+      (St_Turn -> ns_St_Turn);
+  nr =
+    merge ck
+      (St_Stationary -> nr_St_Stationary)(St_Forward -> nr_St_Forward)
+      (St_Turn -> nr_St_Turn)
+tel
+
+node calculateMotor3(irSen1 : int; irSen2 : int; irSen3 : int; irSen4 : int;
+                      pidValue : float; beacon : bool)
+returns (v_l : int; v_r : int; dir : int)
+var timer : int; diR : int; vr : int; vl : int; vl_1 : int; vr_1 : int;
+    diR_3 : int; pnr : bool; nr : bool; r : bool; ns : st_1; s : st_1;
+    ck_1 : st_1; vl_St_1_Turn : int; vr_St_1_Turn : int; diR_St_1_Turn : int;
+    timer_St_1_Turn : int; ns_St_1_Turn : st_1; nr_St_1_Turn : bool;
+    vl_St_1_Forward : int; vr_St_1_Forward : int; diR_St_1_Forward : int;
+    timer_St_1_Forward : int; ns_St_1_Forward : st_1; nr_St_1_Forward : bool;
+    vl_St_1_Parking1 : int; vr_St_1_Parking1 : int; diR_St_1_Parking1 : int;
+    timer_St_1_Parking1 : int; ns_St_1_Parking1 : st_1;
+    nr_St_1_Parking1 : bool; vl_St_1_Parking2 : int; vr_St_1_Parking2 : int;
+    diR_St_1_Parking2 : int; timer_St_1_Parking2 : int;
+    ns_St_1_Parking2 : st_1; nr_St_1_Parking2 : bool; v_51 : bool;
+    v_52 : bool; v_53 : bool; v_54 : int; v_55 : bool; v_56 : bool;
+    v_57 : int; v_58 : int; v_59 : int; v_60 : int; v_61 : float; v_62 : int;
+    v_63 : float; v_64 : int; v_47 : float; v_48 : int; v_49 : float;
+    v_50 : int; r_2 : bool; r_1 : bool; ck : st_1; s_St_1_Turn : st_1;
+    r_St_1_Turn : bool; s_St_1_Forward : st_1; r_St_1_Forward : bool;
+    s_St_1_Parking1 : st_1; r_St_1_Parking1 : bool; s_St_1_Parking2 : st_1;
+    r_St_1_Parking2 : bool; v : bool; v_40 : bool; v_41 : bool; v_42 : bool;
+    v_43 : bool; v_44 : bool; v_45 : st_1; v_46 : bool;
+let
+  diR_3 = pre diR;
+  vr_1 = pre vr;
+  vl_1 = pre vl;
+  pnr = false fby nr;
+  ck_1 = s;
+  diR_St_1_Turn = (diR_3 when St_1_Turn(ck_1));
+  vr_St_1_Turn = (30 - v_64);
+  v_64 = Mc_ext.int_of_float(v_63);
+  v_63 = (0.500000 *. (pidValue when St_1_Turn(ck_1)));
+  vl_St_1_Turn = (30 + v_62);
+  v_62 = Mc_ext.int_of_float(v_61);
+  v_61 = (0.500000 *. (pidValue when St_1_Turn(ck_1)));
+  timer_St_1_Turn = if v_53 then 4 else v_60;
+  v_60 = if v_56 then v_58 else v_59;
+  v_59 = pre (timer when St_1_Turn(ck_1));
+  v_58 = (v_57 - 1);
+  v_57 = pre (timer when St_1_Turn(ck_1));
+  v_56 = (v_55 & (beacon when St_1_Turn(ck_1)));
+  v_55 = (v_54 > 0);
+  v_54 = pre (timer when St_1_Turn(ck_1));
+  v_53 = if v_52 then true else (r when St_1_Turn(ck_1));
+  v_52 = true fby false;
+  nr_St_1_Turn = if v_51 then true else false;
+  ns_St_1_Turn = if v_51 then St_1_Forward else St_1_Turn;
+  v_51 = ((timer when St_1_Turn(ck_1)) <= 0);
+  timer_St_1_Forward = 0;
+  diR_St_1_Forward = 0;
+  vr_St_1_Forward = (30 - v_50);
+  v_50 = Mc_ext.int_of_float(v_49);
+  v_49 = (0.500000 *. (pidValue when St_1_Forward(ck_1)));
+  vl_St_1_Forward = (30 + v_48);
+  v_48 = Mc_ext.int_of_float(v_47);
+  v_47 = (0.500000 *. (pidValue when St_1_Forward(ck_1)));
+  nr_St_1_Forward = false;
+  ns_St_1_Forward = St_1_Forward;
+  timer_St_1_Parking1 = 0;
+  (vl_St_1_Parking1, vr_St_1_Parking1, diR_St_1_Parking1) =
+    parking((beacon when St_1_Parking1(ck_1)), 2) every r_2;
+  nr_St_1_Parking1 = false;
+  ns_St_1_Parking1 = St_1_Parking1;
+  r_2 = (r when St_1_Parking1(ck_1));
+  timer_St_1_Parking2 = 0;
+  (vl_St_1_Parking2, vr_St_1_Parking2, diR_St_1_Parking2) =
+    parking((beacon when St_1_Parking2(ck_1)), 1) every r_1;
+  nr_St_1_Parking2 = false;
+  ns_St_1_Parking2 = St_1_Parking2;
+  r_1 = (r when St_1_Parking2(ck_1));
+  vl =
+    merge ck_1
+      (St_1_Parking2 -> vl_St_1_Parking2)(St_1_Parking1 -> vl_St_1_Parking1)
+      (St_1_Forward -> vl_St_1_Forward)(St_1_Turn -> vl_St_1_Turn);
+  vr =
+    merge ck_1
+      (St_1_Parking2 -> vr_St_1_Parking2)(St_1_Parking1 -> vr_St_1_Parking1)
+      (St_1_Forward -> vr_St_1_Forward)(St_1_Turn -> vr_St_1_Turn);
+  diR =
+    merge ck_1
+      (St_1_Parking2 -> diR_St_1_Parking2)
+      (St_1_Parking1 -> diR_St_1_Parking1)(St_1_Forward -> diR_St_1_Forward)
+      (St_1_Turn -> diR_St_1_Turn);
+  timer =
+    merge ck_1
+      (St_1_Parking2 -> timer_St_1_Parking2)
+      (St_1_Parking1 -> timer_St_1_Parking1)
+      (St_1_Forward -> timer_St_1_Forward)(St_1_Turn -> timer_St_1_Turn);
+  ns =
+    merge ck_1
+      (St_1_Parking2 -> ns_St_1_Parking2)(St_1_Parking1 -> ns_St_1_Parking1)
+      (St_1_Forward -> ns_St_1_Forward)(St_1_Turn -> ns_St_1_Turn);
+  nr =
+    merge ck_1
+      (St_1_Parking2 -> nr_St_1_Parking2)(St_1_Parking1 -> nr_St_1_Parking1)
+      (St_1_Forward -> nr_St_1_Forward)(St_1_Turn -> nr_St_1_Turn);
+  ck = St_1_Turn fby ns;
+  r_St_1_Turn = (pnr when St_1_Turn(ck));
+  s_St_1_Turn = St_1_Turn;
+  r_St_1_Forward = if v_41 then true else v_46;
+  s_St_1_Forward = if v_41 then St_1_Parking1 else v_45;
+  v_46 = if v_44 then true else (pnr when St_1_Forward(ck));
+  v_45 = if v_44 then St_1_Parking2 else St_1_Forward;
+  v_44 = (v_42 & v_43);
+  v_43 = ((irSen2 when St_1_Forward(ck)) = 1);
+  v_42 = ((irSen1 when St_1_Forward(ck)) = 1);
+  v_41 = (v & v_40);
+  v_40 = ((irSen4 when St_1_Forward(ck)) = 1);
+  v = ((irSen3 when St_1_Forward(ck)) = 1);
+  r_St_1_Parking1 = (pnr when St_1_Parking1(ck));
+  s_St_1_Parking1 = St_1_Parking1;
+  r_St_1_Parking2 = (pnr when St_1_Parking2(ck));
+  s_St_1_Parking2 = St_1_Parking2;
+  s =
+    merge ck
+      (St_1_Parking2 -> s_St_1_Parking2)(St_1_Parking1 -> s_St_1_Parking1)
+      (St_1_Forward -> s_St_1_Forward)(St_1_Turn -> s_St_1_Turn);
+  r =
+    merge ck
+      (St_1_Parking2 -> r_St_1_Parking2)(St_1_Parking1 -> r_St_1_Parking1)
+      (St_1_Forward -> r_St_1_Forward)(St_1_Turn -> r_St_1_Turn);
+  dir = diR;
+  v_r = vr;
+  v_l = vl
+tel
+
+node main(sen0 : int; sen1 : int; sen2 : int; sen3 : int; sen4 : int;
+           irSen1 : int; irSen2 : int; irSen3 : int; irSen4 : int;
+           beacon : bool)
+returns (v_l : int; v_r : int; dir : int)
+var pidValue : float; error : float; sen : float^5; v : float; v_65 : float;
+    v_66 : float; v_67 : float; v_68 : float;
+let
+  (v_l, v_r, dir) =
+    calculateMotor3(irSen1, irSen2, irSen3, irSen4, pidValue, beacon);
+  pidValue = calculatePID(error);
+  error = calculateError(sen);
+  sen = [v; v_65; v_66; v_67; v_68];
+  v_68 = Mc_ext.float_of_int(sen4);
+  v_67 = Mc_ext.float_of_int(sen3);
+  v_66 = Mc_ext.float_of_int(sen2);
+  v_65 = Mc_ext.float_of_int(sen1);
+  v = Mc_ext.float_of_int(sen0)
+tel
+

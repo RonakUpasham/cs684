@@ -1,0 +1,662 @@
+open Mc_ext
+type st_3 = St_3_Whiteline|St_3_Blackline
+type st_2 = St_2_Wait|St_2_Ready|St_2_Increment
+type st_1 = St_1_Noderight|St_1_Nodeone|St_1_Nodeleft|St_1_Forward
+type st = St_Hardright|St_Hardleft|St_Forward
+const kp = 0.300000
+const kd = 0.300000
+const ki = 0.000000
+const white_weights = [0.400000, 0.300000, 0.426000, 0.400000]
+const t_small_pos = 20.000000
+const t_small_neg = ~-.(20.000000)
+const t_large_pos = 70.000000
+const t_large_neg = ~-.(70.000000)
+const black_weights = [0.350000, 0.280000, 0.405000, 0.350000]
+const t_small_pos2 = 8.000000
+const t_small_neg2 = ~-.(8.000000)
+node calculatePID(error : float) returns (pidValue : float)
+var d : float; i : float; p : float; v : bool; v_1 : float; v_2 : float;
+    v_3 : bool; v_4 : float; v_5 : float; v_6 : float; v_7 : float;
+    v_8 : float; v_9 : float;
+let
+  pidValue = (v_8 +. v_9);
+  v_9 = (kd *. d);
+  v_8 = (v_6 +. v_7);
+  v_7 = (ki *. i);
+  v_6 = (kp *. p);
+  d = (error -. v_5);
+  v_5 = if v_3 then 0.000000 else v_4;
+  v_4 = pre error;
+  v_3 = true fby false;
+  i = if v then 0.000000 else v_2;
+  v_2 = (v_1 +. error);
+  v_1 = pre i;
+  v = true fby false;
+  p = error
+tel
+
+node calculateError(sen : float^5; weights : float^4) returns (error : float)
+var right_weighted_sum : float; left_weighted_sum : float; v : float;
+    v_10 : float; v_11 : float; v_12 : float; v_13 : float; v_14 : float;
+    v_15 : float; v_16 : float; v_17 : float; v_18 : float; v_19 : float;
+    v_20 : float;
+let
+  error = (left_weighted_sum -. right_weighted_sum);
+  right_weighted_sum = (v_17 +. v_20);
+  v_20 = (v_18 *. v_19);
+  v_19 = weights[3];
+  v_18 = sen[4];
+  v_17 = (v_15 *. v_16);
+  v_16 = weights[2];
+  v_15 = sen[3];
+  left_weighted_sum = (v_11 +. v_14);
+  v_14 = (v_12 *. v_13);
+  v_13 = weights[1];
+  v_12 = sen[1];
+  v_11 = (v *. v_10);
+  v_10 = weights[0];
+  v = sen[0]
+tel
+
+node calculateMotor1(pidValue : float)
+returns (v_l : int; v_r : int; dir : int)
+var diR : int; vr : int; vl : int; vl_2 : int; vr_2 : int; diR_2 : int;
+    pnr : bool; nr : bool; r : bool; ns : st; s : st; ck_1 : st;
+    vl_St_Forward : int; vr_St_Forward : int; diR_St_Forward : int;
+    ns_St_Forward : st; nr_St_Forward : bool; vl_St_Hardleft : int;
+    vr_St_Hardleft : int; diR_St_Hardleft : int; ns_St_Hardleft : st;
+    nr_St_Hardleft : bool; vl_St_Hardright : int; vr_St_Hardright : int;
+    diR_St_Hardright : int; ns_St_Hardright : st; nr_St_Hardright : bool;
+    v_36 : float; v_37 : int; v_38 : float; v_39 : int; ck : st;
+    s_St_Forward : st; r_St_Forward : bool; s_St_Hardleft : st;
+    r_St_Hardleft : bool; s_St_Hardright : st; r_St_Hardright : bool;
+    v_32 : bool; v_33 : bool; v_34 : st; v_35 : bool; v_26 : bool;
+    v_27 : bool; v_28 : bool; v_29 : bool; v_30 : st; v_31 : bool; v : bool;
+    v_21 : bool; v_22 : bool; v_23 : bool; v_24 : st; v_25 : bool;
+let
+  diR_2 = pre diR;
+  vr_2 = pre vr;
+  vl_2 = pre vl;
+  pnr = false fby nr;
+  ck_1 = s;
+  diR_St_Forward = 0;
+  vr_St_Forward = (30 + v_39);
+  v_39 = Mc_ext.int_of_float(v_38);
+  v_38 = (0.500000 *. (pidValue when St_Forward(ck_1)));
+  vl_St_Forward = (30 - v_37);
+  v_37 = Mc_ext.int_of_float(v_36);
+  v_36 = (0.500000 *. (pidValue when St_Forward(ck_1)));
+  nr_St_Forward = false;
+  ns_St_Forward = St_Forward;
+  diR_St_Hardleft = 1;
+  vr_St_Hardleft = 150;
+  vl_St_Hardleft = 130;
+  nr_St_Hardleft = false;
+  ns_St_Hardleft = St_Hardleft;
+  diR_St_Hardright = 2;
+  vr_St_Hardright = 130;
+  vl_St_Hardright = 150;
+  nr_St_Hardright = false;
+  ns_St_Hardright = St_Hardright;
+  vl =
+    merge ck_1
+      (St_Hardright -> vl_St_Hardright)(St_Hardleft -> vl_St_Hardleft)
+      (St_Forward -> vl_St_Forward);
+  vr =
+    merge ck_1
+      (St_Hardright -> vr_St_Hardright)(St_Hardleft -> vr_St_Hardleft)
+      (St_Forward -> vr_St_Forward);
+  diR =
+    merge ck_1
+      (St_Hardright -> diR_St_Hardright)(St_Hardleft -> diR_St_Hardleft)
+      (St_Forward -> diR_St_Forward);
+  ns =
+    merge ck_1
+      (St_Hardright -> ns_St_Hardright)(St_Hardleft -> ns_St_Hardleft)
+      (St_Forward -> ns_St_Forward);
+  nr =
+    merge ck_1
+      (St_Hardright -> nr_St_Hardright)(St_Hardleft -> nr_St_Hardleft)
+      (St_Forward -> nr_St_Forward);
+  ck = St_Forward fby ns;
+  r_St_Forward = if v_32 then true else v_35;
+  s_St_Forward = if v_32 then St_Hardleft else v_34;
+  v_35 = if v_33 then true else (pnr when St_Forward(ck));
+  v_34 = if v_33 then St_Hardright else St_Forward;
+  v_33 = ((pidValue when St_Forward(ck)) <. t_large_neg);
+  v_32 = ((pidValue when St_Forward(ck)) >. t_large_pos);
+  r_St_Hardleft = if v_28 then true else v_31;
+  s_St_Hardleft = if v_28 then St_Forward else v_30;
+  v_31 = if v_29 then true else (pnr when St_Hardleft(ck));
+  v_30 = if v_29 then St_Hardright else St_Hardleft;
+  v_29 = ((pidValue when St_Hardleft(ck)) <. t_large_neg);
+  v_28 = (v_26 & v_27);
+  v_27 = ((pidValue when St_Hardleft(ck)) <. t_small_pos);
+  v_26 = ((pidValue when St_Hardleft(ck)) >. t_small_neg);
+  r_St_Hardright = if v_22 then true else v_25;
+  s_St_Hardright = if v_22 then St_Forward else v_24;
+  v_25 = if v_23 then true else (pnr when St_Hardright(ck));
+  v_24 = if v_23 then St_Hardleft else St_Hardright;
+  v_23 = ((pidValue when St_Hardright(ck)) >. t_large_pos);
+  v_22 = (v & v_21);
+  v_21 = ((pidValue when St_Hardright(ck)) <. t_small_pos);
+  v = ((pidValue when St_Hardright(ck)) >. t_small_neg);
+  s =
+    merge ck
+      (St_Hardright -> s_St_Hardright)(St_Hardleft -> s_St_Hardleft)
+      (St_Forward -> s_St_Forward);
+  r =
+    merge ck
+      (St_Hardright -> r_St_Hardright)(St_Hardleft -> r_St_Hardleft)
+      (St_Forward -> r_St_Forward);
+  dir = diR;
+  v_r = vr;
+  v_l = vl
+tel
+
+node calculateMotor2(sen : float^5; pidValue : float; count : int;
+                      flag : bool)
+returns (v_l : int; v_r : int; dir : int)
+var diR : int; vr : int; vl : int; vl_3 : int; vr_3 : int; diR_3 : int;
+    pnr : bool; nr : bool; r : bool; ns : st_1; s : st_1; ck_2 : st_1;
+    vl_St_1_Forward : int; vr_St_1_Forward : int; diR_St_1_Forward : int;
+    ns_St_1_Forward : st_1; nr_St_1_Forward : bool; vl_St_1_Nodeone : int;
+    vr_St_1_Nodeone : int; diR_St_1_Nodeone : int; ns_St_1_Nodeone : st_1;
+    nr_St_1_Nodeone : bool; vl_St_1_Nodeleft : int; vr_St_1_Nodeleft : int;
+    diR_St_1_Nodeleft : int; ns_St_1_Nodeleft : st_1;
+    nr_St_1_Nodeleft : bool; vl_St_1_Noderight : int;
+    vr_St_1_Noderight : int; diR_St_1_Noderight : int;
+    ns_St_1_Noderight : st_1; nr_St_1_Noderight : bool; v_216 : float;
+    v_217 : int; v_218 : float; v_219 : int; ck : st_1;
+    s_St_1_Forward : st_1; r_St_1_Forward : bool; s_St_1_Nodeone : st_1;
+    r_St_1_Nodeone : bool; s_St_1_Nodeleft : st_1; r_St_1_Nodeleft : bool;
+    s_St_1_Noderight : st_1; r_St_1_Noderight : bool; v_204 : bool;
+    v_205 : bool; v_206 : bool; v_207 : bool; v_208 : bool; v_209 : bool;
+    v_210 : bool; v_211 : bool; v_212 : st_1; v_213 : bool; v_214 : st_1;
+    v_215 : bool; v_149 : float; v_150 : bool; v_151 : float; v_152 : bool;
+    v_153 : bool; v_154 : float; v_155 : bool; v_156 : bool; v_157 : float;
+    v_158 : bool; v_159 : float; v_160 : bool; v_161 : bool; v_162 : float;
+    v_163 : bool; v_164 : bool; v_165 : bool; v_166 : float; v_167 : bool;
+    v_168 : float; v_169 : bool; v_170 : bool; v_171 : float; v_172 : bool;
+    v_173 : bool; v_174 : bool; v_175 : bool; v_176 : float; v_177 : bool;
+    v_178 : float; v_179 : bool; v_180 : bool; v_181 : float; v_182 : bool;
+    v_183 : bool; v_184 : float; v_185 : bool; v_186 : float; v_187 : bool;
+    v_188 : bool; v_189 : float; v_190 : bool; v_191 : bool; v_192 : bool;
+    v_193 : float; v_194 : bool; v_195 : float; v_196 : bool; v_197 : bool;
+    v_198 : float; v_199 : bool; v_200 : bool; v_201 : bool; v_202 : st_1;
+    v_203 : bool; v_94 : float; v_95 : bool; v_96 : float; v_97 : bool;
+    v_98 : bool; v_99 : float; v_100 : bool; v_101 : bool; v_102 : float;
+    v_103 : bool; v_104 : float; v_105 : bool; v_106 : bool; v_107 : float;
+    v_108 : bool; v_109 : bool; v_110 : bool; v_111 : float; v_112 : bool;
+    v_113 : float; v_114 : bool; v_115 : bool; v_116 : float; v_117 : bool;
+    v_118 : bool; v_119 : bool; v_120 : bool; v_121 : float; v_122 : bool;
+    v_123 : float; v_124 : bool; v_125 : bool; v_126 : float; v_127 : bool;
+    v_128 : bool; v_129 : float; v_130 : bool; v_131 : float; v_132 : bool;
+    v_133 : bool; v_134 : float; v_135 : bool; v_136 : bool; v_137 : bool;
+    v_138 : float; v_139 : bool; v_140 : float; v_141 : bool; v_142 : bool;
+    v_143 : float; v_144 : bool; v_145 : bool; v_146 : bool; v_147 : st_1;
+    v_148 : bool; v : float; v_40 : bool; v_41 : float; v_42 : bool;
+    v_43 : bool; v_44 : float; v_45 : bool; v_46 : bool; v_47 : float;
+    v_48 : bool; v_49 : float; v_50 : bool; v_51 : bool; v_52 : float;
+    v_53 : bool; v_54 : bool; v_55 : bool; v_56 : float; v_57 : bool;
+    v_58 : float; v_59 : bool; v_60 : bool; v_61 : float; v_62 : bool;
+    v_63 : bool; v_64 : bool; v_65 : bool; v_66 : float; v_67 : bool;
+    v_68 : float; v_69 : bool; v_70 : bool; v_71 : float; v_72 : bool;
+    v_73 : bool; v_74 : float; v_75 : bool; v_76 : float; v_77 : bool;
+    v_78 : bool; v_79 : float; v_80 : bool; v_81 : bool; v_82 : bool;
+    v_83 : float; v_84 : bool; v_85 : float; v_86 : bool; v_87 : bool;
+    v_88 : float; v_89 : bool; v_90 : bool; v_91 : bool; v_92 : st_1;
+    v_93 : bool;
+let
+  diR_3 = pre diR;
+  vr_3 = pre vr;
+  vl_3 = pre vl;
+  pnr = false fby nr;
+  ck_2 = s;
+  diR_St_1_Forward = 0;
+  vr_St_1_Forward = (30 - v_219);
+  v_219 = Mc_ext.int_of_float(v_218);
+  v_218 = (0.500000 *. (pidValue when St_1_Forward(ck_2)));
+  vl_St_1_Forward = (30 + v_217);
+  v_217 = Mc_ext.int_of_float(v_216);
+  v_216 = (0.500000 *. (pidValue when St_1_Forward(ck_2)));
+  nr_St_1_Forward = false;
+  ns_St_1_Forward = St_1_Forward;
+  diR_St_1_Nodeone = 0;
+  vr_St_1_Nodeone = 10;
+  vl_St_1_Nodeone = 30;
+  nr_St_1_Nodeone = false;
+  ns_St_1_Nodeone = St_1_Nodeone;
+  diR_St_1_Nodeleft = 0;
+  vr_St_1_Nodeleft = 40;
+  vl_St_1_Nodeleft = 10;
+  nr_St_1_Nodeleft = false;
+  ns_St_1_Nodeleft = St_1_Nodeleft;
+  diR_St_1_Noderight = 0;
+  vr_St_1_Noderight = 10;
+  vl_St_1_Noderight = 30;
+  nr_St_1_Noderight = false;
+  ns_St_1_Noderight = St_1_Noderight;
+  vl =
+    merge ck_2
+      (St_1_Noderight -> vl_St_1_Noderight)
+      (St_1_Nodeleft -> vl_St_1_Nodeleft)(St_1_Nodeone -> vl_St_1_Nodeone)
+      (St_1_Forward -> vl_St_1_Forward);
+  vr =
+    merge ck_2
+      (St_1_Noderight -> vr_St_1_Noderight)
+      (St_1_Nodeleft -> vr_St_1_Nodeleft)(St_1_Nodeone -> vr_St_1_Nodeone)
+      (St_1_Forward -> vr_St_1_Forward);
+  diR =
+    merge ck_2
+      (St_1_Noderight -> diR_St_1_Noderight)
+      (St_1_Nodeleft -> diR_St_1_Nodeleft)(St_1_Nodeone -> diR_St_1_Nodeone)
+      (St_1_Forward -> diR_St_1_Forward);
+  ns =
+    merge ck_2
+      (St_1_Noderight -> ns_St_1_Noderight)
+      (St_1_Nodeleft -> ns_St_1_Nodeleft)(St_1_Nodeone -> ns_St_1_Nodeone)
+      (St_1_Forward -> ns_St_1_Forward);
+  nr =
+    merge ck_2
+      (St_1_Noderight -> nr_St_1_Noderight)
+      (St_1_Nodeleft -> nr_St_1_Nodeleft)(St_1_Nodeone -> nr_St_1_Nodeone)
+      (St_1_Forward -> nr_St_1_Forward);
+  ck = St_1_Forward fby ns;
+  r_St_1_Forward = if v_205 then true else v_215;
+  s_St_1_Forward = if v_205 then St_1_Nodeone else v_214;
+  v_215 = if v_207 then true else v_213;
+  v_214 = if v_207 then St_1_Noderight else v_212;
+  v_213 = if v_211 then true else (pnr when St_1_Forward(ck));
+  v_212 = if v_211 then St_1_Nodeleft else St_1_Forward;
+  v_211 = ((flag when St_1_Forward(ck)) & v_210);
+  v_210 = (v_208 or v_209);
+  v_209 = ((count when St_1_Forward(ck)) = 4);
+  v_208 = ((count when St_1_Forward(ck)) = 3);
+  v_207 = ((flag when St_1_Forward(ck)) & v_206);
+  v_206 = ((count when St_1_Forward(ck)) = 2);
+  v_205 = ((flag when St_1_Forward(ck)) & v_204);
+  v_204 = ((count when St_1_Forward(ck)) = 1);
+  r_St_1_Nodeone = if v_175 then true else v_203;
+  s_St_1_Nodeone = if v_175 then St_1_Nodeone else v_202;
+  v_203 = if v_201 then true else (pnr when St_1_Nodeone(ck));
+  v_202 = if v_201 then St_1_Forward else St_1_Nodeone;
+  v_201 = (v_192 or v_200);
+  v_200 = (v_197 & v_199);
+  v_199 = (v_198 >. 800.000000);
+  v_198 = (sen when St_1_Nodeone(ck))[4];
+  v_197 = (v_194 & v_196);
+  v_196 = (v_195 <. 500.000000);
+  v_195 = (sen when St_1_Nodeone(ck))[3];
+  v_194 = (v_193 >. 800.000000);
+  v_193 = (sen when St_1_Nodeone(ck))[2];
+  v_192 = (v_183 or v_191);
+  v_191 = (v_188 & v_190);
+  v_190 = (v_189 >. 800.000000);
+  v_189 = (sen when St_1_Nodeone(ck))[2];
+  v_188 = (v_185 & v_187);
+  v_187 = (v_186 <. 700.000000);
+  v_186 = (sen when St_1_Nodeone(ck))[1];
+  v_185 = (v_184 >. 800.000000);
+  v_184 = (sen when St_1_Nodeone(ck))[0];
+  v_183 = (v_180 & v_182);
+  v_182 = (v_181 >. 800.000000);
+  v_181 = (sen when St_1_Nodeone(ck))[4];
+  v_180 = (v_177 & v_179);
+  v_179 = (v_178 <. 700.000000);
+  v_178 = (sen when St_1_Nodeone(ck))[2];
+  v_177 = (v_176 >. 800.000000);
+  v_176 = (sen when St_1_Nodeone(ck))[0];
+  v_175 = not(v_174);
+  v_174 = (v_165 or v_173);
+  v_173 = (v_170 & v_172);
+  v_172 = (v_171 >. 800.000000);
+  v_171 = (sen when St_1_Nodeone(ck))[4];
+  v_170 = (v_167 & v_169);
+  v_169 = (v_168 <. 500.000000);
+  v_168 = (sen when St_1_Nodeone(ck))[3];
+  v_167 = (v_166 >. 800.000000);
+  v_166 = (sen when St_1_Nodeone(ck))[2];
+  v_165 = (v_156 or v_164);
+  v_164 = (v_161 & v_163);
+  v_163 = (v_162 >. 800.000000);
+  v_162 = (sen when St_1_Nodeone(ck))[2];
+  v_161 = (v_158 & v_160);
+  v_160 = (v_159 <. 700.000000);
+  v_159 = (sen when St_1_Nodeone(ck))[1];
+  v_158 = (v_157 >. 800.000000);
+  v_157 = (sen when St_1_Nodeone(ck))[0];
+  v_156 = (v_153 & v_155);
+  v_155 = (v_154 >. 800.000000);
+  v_154 = (sen when St_1_Nodeone(ck))[4];
+  v_153 = (v_150 & v_152);
+  v_152 = (v_151 <. 700.000000);
+  v_151 = (sen when St_1_Nodeone(ck))[2];
+  v_150 = (v_149 >. 800.000000);
+  v_149 = (sen when St_1_Nodeone(ck))[0];
+  r_St_1_Nodeleft = if v_120 then true else v_148;
+  s_St_1_Nodeleft = if v_120 then St_1_Nodeleft else v_147;
+  v_148 = if v_146 then true else (pnr when St_1_Nodeleft(ck));
+  v_147 = if v_146 then St_1_Forward else St_1_Nodeleft;
+  v_146 = (v_137 or v_145);
+  v_145 = (v_142 & v_144);
+  v_144 = (v_143 >. 800.000000);
+  v_143 = (sen when St_1_Nodeleft(ck))[4];
+  v_142 = (v_139 & v_141);
+  v_141 = (v_140 <. 500.000000);
+  v_140 = (sen when St_1_Nodeleft(ck))[3];
+  v_139 = (v_138 >. 800.000000);
+  v_138 = (sen when St_1_Nodeleft(ck))[2];
+  v_137 = (v_128 or v_136);
+  v_136 = (v_133 & v_135);
+  v_135 = (v_134 >. 800.000000);
+  v_134 = (sen when St_1_Nodeleft(ck))[2];
+  v_133 = (v_130 & v_132);
+  v_132 = (v_131 <. 700.000000);
+  v_131 = (sen when St_1_Nodeleft(ck))[1];
+  v_130 = (v_129 >. 800.000000);
+  v_129 = (sen when St_1_Nodeleft(ck))[0];
+  v_128 = (v_125 & v_127);
+  v_127 = (v_126 >. 800.000000);
+  v_126 = (sen when St_1_Nodeleft(ck))[4];
+  v_125 = (v_122 & v_124);
+  v_124 = (v_123 <. 700.000000);
+  v_123 = (sen when St_1_Nodeleft(ck))[2];
+  v_122 = (v_121 >. 800.000000);
+  v_121 = (sen when St_1_Nodeleft(ck))[0];
+  v_120 = not(v_119);
+  v_119 = (v_110 or v_118);
+  v_118 = (v_115 & v_117);
+  v_117 = (v_116 >. 800.000000);
+  v_116 = (sen when St_1_Nodeleft(ck))[4];
+  v_115 = (v_112 & v_114);
+  v_114 = (v_113 <. 500.000000);
+  v_113 = (sen when St_1_Nodeleft(ck))[3];
+  v_112 = (v_111 >. 800.000000);
+  v_111 = (sen when St_1_Nodeleft(ck))[2];
+  v_110 = (v_101 or v_109);
+  v_109 = (v_106 & v_108);
+  v_108 = (v_107 >. 800.000000);
+  v_107 = (sen when St_1_Nodeleft(ck))[2];
+  v_106 = (v_103 & v_105);
+  v_105 = (v_104 <. 700.000000);
+  v_104 = (sen when St_1_Nodeleft(ck))[1];
+  v_103 = (v_102 >. 800.000000);
+  v_102 = (sen when St_1_Nodeleft(ck))[0];
+  v_101 = (v_98 & v_100);
+  v_100 = (v_99 >. 800.000000);
+  v_99 = (sen when St_1_Nodeleft(ck))[4];
+  v_98 = (v_95 & v_97);
+  v_97 = (v_96 <. 700.000000);
+  v_96 = (sen when St_1_Nodeleft(ck))[2];
+  v_95 = (v_94 >. 800.000000);
+  v_94 = (sen when St_1_Nodeleft(ck))[0];
+  r_St_1_Noderight = if v_65 then true else v_93;
+  s_St_1_Noderight = if v_65 then St_1_Noderight else v_92;
+  v_93 = if v_91 then true else (pnr when St_1_Noderight(ck));
+  v_92 = if v_91 then St_1_Forward else St_1_Noderight;
+  v_91 = (v_82 or v_90);
+  v_90 = (v_87 & v_89);
+  v_89 = (v_88 >. 800.000000);
+  v_88 = (sen when St_1_Noderight(ck))[4];
+  v_87 = (v_84 & v_86);
+  v_86 = (v_85 <. 500.000000);
+  v_85 = (sen when St_1_Noderight(ck))[3];
+  v_84 = (v_83 >. 800.000000);
+  v_83 = (sen when St_1_Noderight(ck))[2];
+  v_82 = (v_73 or v_81);
+  v_81 = (v_78 & v_80);
+  v_80 = (v_79 >. 800.000000);
+  v_79 = (sen when St_1_Noderight(ck))[2];
+  v_78 = (v_75 & v_77);
+  v_77 = (v_76 <. 700.000000);
+  v_76 = (sen when St_1_Noderight(ck))[1];
+  v_75 = (v_74 >. 800.000000);
+  v_74 = (sen when St_1_Noderight(ck))[0];
+  v_73 = (v_70 & v_72);
+  v_72 = (v_71 >. 800.000000);
+  v_71 = (sen when St_1_Noderight(ck))[4];
+  v_70 = (v_67 & v_69);
+  v_69 = (v_68 <. 700.000000);
+  v_68 = (sen when St_1_Noderight(ck))[2];
+  v_67 = (v_66 >. 800.000000);
+  v_66 = (sen when St_1_Noderight(ck))[0];
+  v_65 = not(v_64);
+  v_64 = (v_55 or v_63);
+  v_63 = (v_60 & v_62);
+  v_62 = (v_61 >. 800.000000);
+  v_61 = (sen when St_1_Noderight(ck))[4];
+  v_60 = (v_57 & v_59);
+  v_59 = (v_58 <. 500.000000);
+  v_58 = (sen when St_1_Noderight(ck))[3];
+  v_57 = (v_56 >. 800.000000);
+  v_56 = (sen when St_1_Noderight(ck))[2];
+  v_55 = (v_46 or v_54);
+  v_54 = (v_51 & v_53);
+  v_53 = (v_52 >. 800.000000);
+  v_52 = (sen when St_1_Noderight(ck))[2];
+  v_51 = (v_48 & v_50);
+  v_50 = (v_49 <. 700.000000);
+  v_49 = (sen when St_1_Noderight(ck))[1];
+  v_48 = (v_47 >. 800.000000);
+  v_47 = (sen when St_1_Noderight(ck))[0];
+  v_46 = (v_43 & v_45);
+  v_45 = (v_44 >. 800.000000);
+  v_44 = (sen when St_1_Noderight(ck))[4];
+  v_43 = (v_40 & v_42);
+  v_42 = (v_41 <. 700.000000);
+  v_41 = (sen when St_1_Noderight(ck))[2];
+  v_40 = (v >. 800.000000);
+  v = (sen when St_1_Noderight(ck))[0];
+  s =
+    merge ck
+      (St_1_Noderight -> s_St_1_Noderight)(St_1_Nodeleft -> s_St_1_Nodeleft)
+      (St_1_Nodeone -> s_St_1_Nodeone)(St_1_Forward -> s_St_1_Forward);
+  r =
+    merge ck
+      (St_1_Noderight -> r_St_1_Noderight)(St_1_Nodeleft -> r_St_1_Nodeleft)
+      (St_1_Nodeone -> r_St_1_Nodeone)(St_1_Forward -> r_St_1_Forward);
+  dir = diR;
+  v_r = vr;
+  v_l = vl
+tel
+
+node counter(sen : float^5; beacon : int; second : int)
+returns (count : int; flag : bool)
+var beaconcount : int; flg : bool; cnt : int; cnt_2 : int; flg_1 : bool;
+    beaconcount_1 : int; pnr : bool; nr : bool; r : bool; ns : st_2;
+    s : st_2; ck_3 : st_2; cnt_St_2_Ready : int; flg_St_2_Ready : bool;
+    beaconcount_St_2_Ready : int; ns_St_2_Ready : st_2; nr_St_2_Ready : bool;
+    cnt_St_2_Increment : int; flg_St_2_Increment : bool;
+    beaconcount_St_2_Increment : int; ns_St_2_Increment : st_2;
+    nr_St_2_Increment : bool; cnt_St_2_Wait : int; flg_St_2_Wait : bool;
+    beaconcount_St_2_Wait : int; ns_St_2_Wait : st_2; nr_St_2_Wait : bool;
+    ck : st_2; s_St_2_Ready : st_2; r_St_2_Ready : bool;
+    s_St_2_Increment : st_2; r_St_2_Increment : bool; s_St_2_Wait : st_2;
+    r_St_2_Wait : bool; v_220 : bool; v_221 : float; v_222 : bool;
+    v_223 : bool; v_224 : float; v_225 : bool; v_226 : bool; v_227 : float;
+    v_228 : bool; v_229 : bool; v : bool;
+let
+  beaconcount_1 = 0 fby beaconcount;
+  flg_1 = false fby flg;
+  cnt_2 = 0 fby cnt;
+  pnr = false fby nr;
+  ck_3 = s;
+  beaconcount_St_2_Ready = 0;
+  flg_St_2_Ready = false;
+  cnt_St_2_Ready = (cnt_2 when St_2_Ready(ck_3));
+  nr_St_2_Ready = false;
+  ns_St_2_Ready = St_2_Ready;
+  beaconcount_St_2_Increment = 0;
+  flg_St_2_Increment = true;
+  cnt_St_2_Increment = ((cnt_2 when St_2_Increment(ck_3)) + 1);
+  nr_St_2_Increment = if true then true else false;
+  ns_St_2_Increment = if true then St_2_Wait else St_2_Increment;
+  flg_St_2_Wait = true;
+  cnt_St_2_Wait = (cnt_2 when St_2_Wait(ck_3));
+  beaconcount_St_2_Wait =
+    ((beaconcount_1 when St_2_Wait(ck_3)) + (beacon when St_2_Wait(ck_3)));
+  nr_St_2_Wait = false;
+  ns_St_2_Wait = St_2_Wait;
+  cnt =
+    merge ck_3
+      (St_2_Wait -> cnt_St_2_Wait)(St_2_Increment -> cnt_St_2_Increment)
+      (St_2_Ready -> cnt_St_2_Ready);
+  flg =
+    merge ck_3
+      (St_2_Wait -> flg_St_2_Wait)(St_2_Increment -> flg_St_2_Increment)
+      (St_2_Ready -> flg_St_2_Ready);
+  beaconcount =
+    merge ck_3
+      (St_2_Wait -> beaconcount_St_2_Wait)
+      (St_2_Increment -> beaconcount_St_2_Increment)
+      (St_2_Ready -> beaconcount_St_2_Ready);
+  ns =
+    merge ck_3
+      (St_2_Wait -> ns_St_2_Wait)(St_2_Increment -> ns_St_2_Increment)
+      (St_2_Ready -> ns_St_2_Ready);
+  nr =
+    merge ck_3
+      (St_2_Wait -> nr_St_2_Wait)(St_2_Increment -> nr_St_2_Increment)
+      (St_2_Ready -> nr_St_2_Ready);
+  ck = St_2_Ready fby ns;
+  r_St_2_Ready = if v_229 then false else (pnr when St_2_Ready(ck));
+  s_St_2_Ready = if v_229 then St_2_Increment else St_2_Ready;
+  v_229 = (v_226 & v_228);
+  v_228 = (v_227 <. 500.000000);
+  v_227 = (sen when St_2_Ready(ck))[3];
+  v_226 = (v_223 & v_225);
+  v_225 = (v_224 <. 750.000000);
+  v_224 = (sen when St_2_Ready(ck))[2];
+  v_223 = (v_220 & v_222);
+  v_222 = (v_221 <. 750.000000);
+  v_221 = (sen when St_2_Ready(ck))[1];
+  v_220 = ((second when St_2_Ready(ck)) > 23);
+  r_St_2_Increment = (pnr when St_2_Increment(ck));
+  s_St_2_Increment = St_2_Increment;
+  r_St_2_Wait = if v then false else (pnr when St_2_Wait(ck));
+  s_St_2_Wait = if v then St_2_Ready else St_2_Wait;
+  v = ((beaconcount_1 when St_2_Wait(ck)) > 1);
+  s =
+    merge ck
+      (St_2_Wait -> s_St_2_Wait)(St_2_Increment -> s_St_2_Increment)
+      (St_2_Ready -> s_St_2_Ready);
+  r =
+    merge ck
+      (St_2_Wait -> r_St_2_Wait)(St_2_Increment -> r_St_2_Increment)
+      (St_2_Ready -> r_St_2_Ready);
+  flag = flg;
+  count = cnt
+tel
+
+node check(sen : float^5; second : int)
+returns (white_switch : bool; black_switch : bool)
+var v : float; v_230 : bool; v_231 : float; v_232 : bool; v_233 : bool;
+    v_234 : float; v_235 : bool; v_236 : bool; v_237 : bool; v_238 : float;
+    v_239 : bool; v_240 : bool;
+let
+  black_switch = if v_240 then true else false;
+  v_240 = (v_237 & v_239);
+  v_239 = (v_238 >. 900.000000);
+  v_238 = sen[0];
+  v_237 = (second > 23);
+  white_switch = if v_236 then true else false;
+  v_236 = (v_233 & v_235);
+  v_235 = (v_234 <. 700.000000);
+  v_234 = sen[4];
+  v_233 = (v_230 & v_232);
+  v_232 = (v_231 >. 900.000000);
+  v_231 = sen[2];
+  v_230 = (v <. 700.000000);
+  v = sen[0]
+tel
+
+node main(sen0 : int; sen1 : int; sen2 : int; sen3 : int; sen4 : int;
+           second : int; beacon : int)
+returns (v_l : int; v_r : int; dir : int; cnt : int; pidValue : float)
+var count : int; flag : bool; black_switch : bool; white_switch : bool;
+    error : float; weights : float^4; sen : float^5; pnr : bool; nr : bool;
+    r : bool; ns : st_3; s : st_3; v : float; v_241 : float; v_242 : float;
+    v_243 : float; v_244 : float; ck_4 : st_3; v_l_St_3_Whiteline : int;
+    v_r_St_3_Whiteline : int; dir_St_3_Whiteline : int;
+    weights_St_3_Whiteline : float^4; ns_St_3_Whiteline : st_3;
+    nr_St_3_Whiteline : bool; v_l_St_3_Blackline : int;
+    v_r_St_3_Blackline : int; dir_St_3_Blackline : int;
+    weights_St_3_Blackline : float^4; ns_St_3_Blackline : st_3;
+    nr_St_3_Blackline : bool; r_2 : bool; r_1 : bool; ck : st_3;
+    s_St_3_Whiteline : st_3; r_St_3_Whiteline : bool;
+    s_St_3_Blackline : st_3; r_St_3_Blackline : bool;
+let
+  pnr = false fby nr;
+  ck_4 = s;
+  (v_l_St_3_Whiteline, v_r_St_3_Whiteline, dir_St_3_Whiteline) =
+    calculateMotor1((pidValue when St_3_Whiteline(ck_4))) every r_2;
+  weights_St_3_Whiteline = white_weights;
+  nr_St_3_Whiteline = false;
+  ns_St_3_Whiteline = St_3_Whiteline;
+  r_2 = (r when St_3_Whiteline(ck_4));
+  (v_l_St_3_Blackline, v_r_St_3_Blackline, dir_St_3_Blackline) =
+    calculateMotor2
+    ((sen when St_3_Blackline(ck_4)), (pidValue when St_3_Blackline(ck_4)),
+      (count when St_3_Blackline(ck_4)), (flag when St_3_Blackline(ck_4)))
+       every r_1;
+  weights_St_3_Blackline = black_weights;
+  nr_St_3_Blackline = false;
+  ns_St_3_Blackline = St_3_Blackline;
+  r_1 = (r when St_3_Blackline(ck_4));
+  v_l =
+    merge ck_4
+      (St_3_Blackline -> v_l_St_3_Blackline)
+      (St_3_Whiteline -> v_l_St_3_Whiteline);
+  v_r =
+    merge ck_4
+      (St_3_Blackline -> v_r_St_3_Blackline)
+      (St_3_Whiteline -> v_r_St_3_Whiteline);
+  dir =
+    merge ck_4
+      (St_3_Blackline -> dir_St_3_Blackline)
+      (St_3_Whiteline -> dir_St_3_Whiteline);
+  weights =
+    merge ck_4
+      (St_3_Blackline -> weights_St_3_Blackline)
+      (St_3_Whiteline -> weights_St_3_Whiteline);
+  ns =
+    merge ck_4
+      (St_3_Blackline -> ns_St_3_Blackline)
+      (St_3_Whiteline -> ns_St_3_Whiteline);
+  nr =
+    merge ck_4
+      (St_3_Blackline -> nr_St_3_Blackline)
+      (St_3_Whiteline -> nr_St_3_Whiteline);
+  ck = St_3_Whiteline fby ns;
+  r_St_3_Whiteline =
+    if (black_switch when St_3_Whiteline(ck))
+    then true
+    else (pnr when St_3_Whiteline(ck));
+  s_St_3_Whiteline =
+    if (black_switch when St_3_Whiteline(ck))
+    then St_3_Blackline
+    else St_3_Whiteline;
+  r_St_3_Blackline = (pnr when St_3_Blackline(ck));
+  s_St_3_Blackline = St_3_Blackline;
+  s =
+    merge ck
+      (St_3_Blackline -> s_St_3_Blackline)
+      (St_3_Whiteline -> s_St_3_Whiteline);
+  r =
+    merge ck
+      (St_3_Blackline -> r_St_3_Blackline)
+      (St_3_Whiteline -> r_St_3_Whiteline);
+  cnt = count;
+  (count, flag) = counter(sen, beacon, second);
+  pidValue = calculatePID(error);
+  error = calculateError(sen, weights);
+  (white_switch, black_switch) = check(sen, second);
+  sen = [v; v_241; v_242; v_243; v_244];
+  v_244 = Mc_ext.float_of_int(sen4);
+  v_243 = Mc_ext.float_of_int(sen3);
+  v_242 = Mc_ext.float_of_int(sen2);
+  v_241 = Mc_ext.float_of_int(sen1);
+  v = Mc_ext.float_of_int(sen0)
+tel
+
